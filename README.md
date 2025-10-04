@@ -287,12 +287,12 @@ sudo ./SystemOptimizer
 Откройте Pull Request
 
 👨‍💻 Разработчик
-Lowinolo
+Enderiarti
 
 Контакты:
 📧 Email: dimakokulov3@gmail.com
 
-💻 GitHub: @Lowinolo
+💻 GitHub: @Enderiarti
 
 📱 Telegram: @Diforo4ka
 
