@@ -291,7 +291,7 @@ int main() {
 
     cout << "SYSTEM OPTIMIZER PRO 2025" << endl;
     cout << "Version 1.0.0" << endl;
-    cout << "Created by Lowinolo" << endl;
+    cout << "Created by Enderiarti" << endl;
     cout << "Windows/Linux/Mac Support" << endl;
     cout << "==========================" << endl;
 
