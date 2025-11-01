@@ -1,14 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <string>
-#include <algorithm>
 #include <thread>
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
-#include <limits>
-#include <locale>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -20,194 +16,168 @@ using namespace std;
 
 class SystemOptimizer {
 private:
-    vector<string> tempFiles;
-    vector<string> logFiles;
+    string tempFiles[4];
+    string logFiles[4];
+    int tempCount;
+    int logCount;
 
-    // Function for correct Unicode output
-    void setupConsoleEncoding() {
-#ifdef _WIN32
-        // Set UTF-8 encoding for Windows
+    void setupConsole() {
         SetConsoleOutputCP(65001);
         SetConsoleCP(65001);
-#else
-        // Set locale for Linux/Mac
-        setlocale(LC_ALL, "en_US.UTF-8");
-#endif
+        setlocale(LC_ALL, "Russian");
     }
 
-    // Safe execution of system commands
-    int executeCommand(const string& command) {
-#ifdef _WIN32
-        return system(("chcp 65001 > nul && " + command).c_str());
-#else
+    int runCommand(const string& command) {
         return system(command.c_str());
-#endif
     }
 
 public:
     SystemOptimizer() {
-        setupConsoleEncoding();
+        setupConsole();
 
-        // Initialize temporary file paths
-        tempFiles = {
 #ifdef _WIN32
-            "%TEMP%\\",
-            "%APPDATA%\\Local\\Temp\\",
-            "C:\\Windows\\Temp\\"
-#else
-            "/tmp/",
-            "/var/tmp/",
-            "~/.cache/",
-            "~/.tmp/"
-#endif
-        };
+        tempFiles[0] = "%TEMP%\\";
+        tempFiles[1] = "%APPDATA%\\Local\\Temp\\";
+        tempFiles[2] = "C:\\Windows\\Temp\\";
+        tempCount = 3;
 
-        logFiles = {
-#ifdef _WIN32
-            "C:\\Windows\\System32\\LogFiles\\",
-            "%APPDATA%\\*.log"
+        logFiles[0] = "C:\\Windows\\System32\\LogFiles\\";
+        logFiles[1] = "%APPDATA%\\*.log";
+        logCount = 2;
 #else
-            "/var/log/syslog",
-            "/var/log/auth.log",
-            "/var/log/kern.log",
-            "/var/log/messages"
+        tempFiles[0] = "/tmp/";
+        tempFiles[1] = "/var/tmp/";
+        tempFiles[2] = "~/.cache/";
+        tempFiles[3] = "~/.tmp/";
+        tempCount = 4;
+
+        logFiles[0] = "/var/log/syslog";
+        logFiles[1] = "/var/log/auth.log";
+        logFiles[2] = "/var/log/kern.log";
+        logFiles[3] = "/var/log/messages";
+        logCount = 4;
 #endif
-        };
     }
 
     void clearTempFiles() {
-        cout << "Cleaning temporary files..." << endl;
+        cout << "Очистка временных файлов..." << endl;
 
-        for (const auto& path : tempFiles) {
-            try {
-                string command;
+        for (int i = 0; i < tempCount; i++) {
+            string command;
 #ifdef _WIN32
-                command = "del /q /f /s \"" + path + "*\" 2>nul";
+            command = "del /q /f /s \"" + tempFiles[i] + "*\" 2>nul";
 #else
-                command = "rm -rf " + path + "* 2>/dev/null";
+            command = "rm -rf " + tempFiles[i] + "* 2>/dev/null";
 #endif
-                executeCommand(command);
-            }
-            catch (...) {
-                // Ignore access errors
-            }
+            runCommand(command);
         }
 
-        cout << "Temporary files cleaned" << endl;
+        cout << "Временные файлы очищены" << endl;
     }
 
     void clearLogs() {
-        cout << "Cleaning system logs..." << endl;
+        cout << "Очистка системных логов..." << endl;
 
-        for (const auto& log : logFiles) {
-            try {
+        for (int i = 0; i < logCount; i++) {
 #ifdef _WIN32
-                string command = "del \"" + log + "\" 2>nul";
-                executeCommand(command);
+            string command = "del \"" + logFiles[i] + "\" 2>nul";
+            runCommand(command);
 #else
-                ofstream file(log, ios::trunc);
-                if (file.is_open()) {
-                    file.close();
-                }
+            ofstream file(logFiles[i], ios::trunc);
+            if (file.is_open()) {
+                file.close();
+            }
 #endif
-            }
-            catch (...) {
-                // Ignore access errors
-            }
         }
 
-        cout << "Logs cleaned" << endl;
+        cout << "Логи очищены" << endl;
     }
 
     void memoryOptimization() {
-        cout << "Optimizing memory..." << endl;
+        cout << "Оптимизация памяти..." << endl;
 
 #ifdef _WIN32
-        executeCommand("echo Clearing memory cache...");
+        runCommand("echo Очистка кэша памяти...");
 #else
-        executeCommand("sync && sudo sysctl -w vm.drop_caches=3");
+        runCommand("sync && sudo sysctl -w vm.drop_caches=3");
 #endif
 
         this_thread::sleep_for(chrono::seconds(2));
-        cout << "Memory optimized" << endl;
+        cout << "Память оптимизирована" << endl;
     }
 
     void networkOptimization() {
-        cout << "Optimizing network..." << endl;
+        cout << "Оптимизация сети..." << endl;
 
-        // Reset DNS cache
 #ifdef _WIN32
-        executeCommand("ipconfig /flushdns");
-        executeCommand("netsh winsock reset catalog");
+        runCommand("ipconfig /flushdns");
+        runCommand("netsh winsock reset catalog");
 #else
-        executeCommand("sudo systemd-resolve --flush-caches");
-        executeCommand("sudo service network-manager restart");
+        runCommand("sudo systemd-resolve --flush-caches");
+        runCommand("sudo service network-manager restart");
 #endif
 
         this_thread::sleep_for(chrono::seconds(1));
-        cout << "Network optimized" << endl;
+        cout << "Сеть оптимизирована" << endl;
     }
 
     void diskDefragmentation() {
-        cout << "Defragmenting disk..." << endl;
+        cout << "Дефрагментация диска..." << endl;
 
 #ifdef _WIN32
-        executeCommand("defrag C: /O /U");
+        runCommand("defrag C: /O /U");
 #else
-        executeCommand("sudo e4defrag / >/dev/null 2>&1");
-        executeCommand("sudo fstrim /");
+        runCommand("sudo e4defrag / >/dev/null 2>&1");
+        runCommand("sudo fstrim /");
 #endif
 
         this_thread::sleep_for(chrono::seconds(3));
-        cout << "Defragmentation completed" << endl;
+        cout << "Дефрагментация завершена" << endl;
     }
 
     void systemDiagnostics() {
-        cout << "System diagnostics..." << endl;
+        cout << "Диагностика системы..." << endl;
         cout << "========================" << endl;
 
-        // Disk check
 #ifdef _WIN32
-        executeCommand("wmic diskdrive get size,model");
-        executeCommand("wmic logicaldisk get size,freespace,caption");
+        runCommand("wmic diskdrive get size,model");
+        runCommand("wmic logicaldisk get size,freespace,caption");
 #else
-        executeCommand("df -h | head -10");
+        runCommand("df -h | head -10");
 #endif
         cout << "------------------------" << endl;
 
-        // Memory usage
 #ifdef _WIN32
-        executeCommand("wmic OS get FreePhysicalMemory,TotalVisibleMemorySize");
+        runCommand("wmic OS get FreePhysicalMemory,TotalVisibleMemorySize");
 #else
-        executeCommand("free -h");
+        runCommand("free -h");
 #endif
         cout << "------------------------" << endl;
 
-        // CPU load
 #ifdef _WIN32
-        executeCommand("wmic cpu get loadpercentage");
+        runCommand("wmic cpu get loadpercentage");
 #else
-        executeCommand("top -bn1 | head -5");
+        runCommand("top -bn1 | head -5");
 #endif
     }
 
     void showMenu() {
-        cout << "\nSYSTEM OPTIMIZER PRO 2025" << endl;
-        cout << "==========================" << endl;
-        cout << "1. Clean temporary files" << endl;
-        cout << "2. Clean system logs" << endl;
-        cout << "3. Optimize memory" << endl;
-        cout << "4. Optimize network" << endl;
-        cout << "5. Defragment disk" << endl;
-        cout << "6. System diagnostics" << endl;
-        cout << "7. Full optimization" << endl;
-        cout << "8. Exit" << endl;
-        cout << "==========================" << endl;
-        cout << "Choose option: ";
+        cout << "\nСИСТЕМНЫЙ ОПТИМИЗАТОР PRO 2025" << endl;
+        cout << "==============================" << endl;
+        cout << "1. Очистить временные файлы" << endl;
+        cout << "2. Очистить системные логи" << endl;
+        cout << "3. Оптимизировать память" << endl;
+        cout << "4. Оптимизировать сеть" << endl;
+        cout << "5. Дефрагментировать диск" << endl;
+        cout << "6. Диагностика системы" << endl;
+        cout << "7. Полная оптимизация" << endl;
+        cout << "8. Выход" << endl;
+        cout << "==============================" << endl;
+        cout << "Выберите опцию: ";
     }
 
     void fullOptimization() {
-        cout << "Starting full optimization..." << endl;
+        cout << "Запуск полной оптимизации..." << endl;
 
         clearTempFiles();
         clearLogs();
@@ -216,14 +186,12 @@ public:
         diskDefragmentation();
         systemDiagnostics();
 
-        cout << "Full optimization completed!" << endl;
-        cout << "System running " << rand() % 50 + 50 << "% faster!" << endl;
+        cout << "Полная оптимизация завершена!" << endl;
+        cout << "Система работает на " << rand() % 50 + 50 << "% быстрее!" << endl;
     }
 
     void run() {
         int choice;
-
-        // Initialize random number generator
         srand(time(nullptr));
 
         while (true) {
@@ -232,8 +200,7 @@ public:
 
             if (cin.fail()) {
                 cin.clear();
-               // cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "Input error! Please enter a number." << endl;
+                cout << "Ошибка ввода! Введите число." << endl;
                 continue;
             }
 
@@ -260,17 +227,16 @@ public:
                 fullOptimization();
                 break;
             case 8:
-                cout << "Goodbye! Have a nice day!" << endl;
+                cout << "До свидания! Хорошего дня!" << endl;
                 return;
             default:
-                cout << "Invalid choice! Please choose from 1 to 8." << endl;
+                cout << "Неверный выбор! Выберите от 1 до 8." << endl;
             }
 
-            cout << "\nPress Enter to continue...";
+            cout << "\nНажмите Enter для продолжения...";
             cin.ignore();
             cin.get();
 
-            // Clear console for better appearance
 #ifdef _WIN32
             system("cls");
 #else
@@ -281,19 +247,20 @@ public:
 };
 
 int main() {
-    // Check administrator privileges
+    setlocale(LC_ALL, "Russian");
+
 #ifndef _WIN32
     if (geteuid() != 0) {
-        cout << "Warning: For full functionality run as administrator!" << endl;
+        cout << "Внимание: Для полной функциональности запустите от имени администратора!" << endl;
         cout << "   sudo ./SystemOptimizer" << endl;
     }
 #endif
 
-    cout << "SYSTEM OPTIMIZER PRO 2025" << endl;
-    cout << "Version 1.0.0" << endl;
-    cout << "Created by Enderiarti" << endl;
-    cout << "Windows/Linux/Mac Support" << endl;
-    cout << "==========================" << endl;
+    cout << "СИСТЕМНЫЙ ОПТИМИЗАТОР PRO 2025" << endl;
+    cout << "Версия 1.0.0" << endl;
+    cout << "Создано Lowinolo" << endl;
+    cout << "Поддержка Windows/Linux/Mac" << endl;
+    cout << "==============================" << endl;
 
     SystemOptimizer optimizer;
     optimizer.run();
